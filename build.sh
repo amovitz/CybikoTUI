@@ -2,5 +2,6 @@
 
 TOOLCHAIN_DIR=../CybikoStuff/toolchain
 
-cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_DIR/xtreme.toolchain ./src/lcd/
+rm -Rf CMakeFiles CMakeCache.txt
+cmake -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_DIR/xtreme.toolchain src
 make
