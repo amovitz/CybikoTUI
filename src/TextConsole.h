@@ -98,14 +98,15 @@ private:
         lcd->updateDisplay();
     }
 
-    // TODO(confirm): pixel packing. Assumes 1bpp, byte-per-8-row-band
-    // (same assumption as the earlier hello.cpp demo) until LCDDriver.h
-    // confirms the real layout — fix this one function if it's wrong,
-    // everything else in TextConsole is agnostic to the packing.
+    // Row-major, 8 horizontal pixels packed per byte, MSB = leftmost pixel.
+    // Inferred from the original demo's loop (`for x < getStride()`, not
+    // `< getWidth()`, with y advancing one full row per iteration) — that
+    // only makes sense if stride is bytes-per-row and pixels within a byte
+    // run left-to-right, not stacked vertically like the original guess.
     void setPixel(unsigned char* fb, int stride, int x, int y, bool on) {
         if (x < 0 || y < 0 || y >= SCREEN_H) return;
-        int byteIndex = x + (y / 8) * stride;
-        unsigned char bit = 1 << (y % 8);
+        int byteIndex = (x / 8) + y * stride;
+        unsigned char bit = 1 << (7 - (x % 8));
         if (on) fb[byteIndex] |= bit;
         else    fb[byteIndex] &= ~bit;
     }

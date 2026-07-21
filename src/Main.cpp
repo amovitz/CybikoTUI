@@ -32,6 +32,11 @@ int main() {
 
     console.begin(&lcd);
 
+    // TEMP: draw something immediately so you can confirm the console/font
+    // renderer works before serial is wired up at all. Remove once you've
+    // visually confirmed this shows correctly on the real panel.
+    console.writeText("HELLO CYBIKO\nSERIAL PENDING", 26);
+
     for (;;) {
         Frame f = readFrame(readByte);
 
