@@ -24,17 +24,27 @@ public:
     }
 
     void clear() {
-        fill();
+        for (int r = 0; r < GRID_ROWS; r++)
+            for (int c = 0; c < GRID_COLS; c++)
+                grid[r][c] = ' ';
+        cursorRow = cursorCol = 0;
+
+        fill(0b00);
     }
 
     void fill(int color = 0b00) {
+        // Direct memset instead of walking every cell through setPixel() —
+        // 0x00 = all 4 pixels/byte at level 0 (assumed lightest, matching
+        // setPixel's "off" mapping). If setPixel's polarity turns out to
+        // be inverted for this panel, use 0xFF here too for consistency.
         auto fb = lcd->getFramebuffer();
-        int stride = lcd->getStride();
-        for (int y = 0; y < SCREEN_H; y++)
-            for (int x = 0; x < SCREEN_W; x++)
-                setPixel(fb, stride, x, y, color);
-                lcd->updateDisplay();
-        cursorRow = cursorCol = 0;
+        int totalBytes = lcd->getStride() * lcd->getHeight();
+        for(int i = 0; i < totalBytes; i++) {
+            fb[i] = color << 6 | color << 4 | color << 2 | color;
+        }
+ 
+        lcd->setDirty();
+        lcd->updateDisplay();
     }
 
     void setCursor(int row, int col) {
