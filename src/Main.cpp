@@ -29,13 +29,14 @@ int main() {
     // BRR=4: with the 18.432MHz clock inferred from emu2's Main.cpp,
     //   this gives an exact 115200 baud (18432000 / (32*1*(4+1)) = 115200)
     sci0Init(0x00, 0x00, 4);
+    SCR0 |= SCR_TE | SCR_RE; // sci0Init() leaves SCR0=0 — TE/RE must be set explicitly
 
     console.begin(&lcd);
 
     // TEMP: draw something immediately so you can confirm the console/font
     // renderer works before serial is wired up at all. Remove once you've
     // visually confirmed this shows correctly on the real panel.
-    console.writeText("HELLO CYBIKO\nSERIAL PENDING", 26);
+    console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
 
     for (;;) {
         Frame f = readFrame(readByte);
