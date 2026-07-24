@@ -42,6 +42,7 @@ int main() {
         Frame f = readFrame(readByte);
 
         switch (f.type) {
+            /* DISPLAY */
             case CMD_CLEAR:
                 console.clear();
                 break;
@@ -60,10 +61,23 @@ int main() {
                     console.putChar(f.payload[0], f.payload[1], f.payload[2]);
                 break;
 
+            /* ALIVE */
             case CMD_PING:
                 writeFrame(writeByte, EVT_PONG, nullptr, 0);
                 break;
+            //TODO: Reset
+            
+            /* KEYS */
+            //TODO: Map all keys
 
+            /* VIBRATION */
+            //TODO: Ouput Control
+            //TODO: Timed output
+
+            /* SPEAKER */
+            //TODO: MIDI
+
+            /* UNIMPLEMENTED */
             default:
                 break; // unknown command, ignore
         }
