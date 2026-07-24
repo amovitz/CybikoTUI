@@ -24,11 +24,17 @@ public:
     }
 
     void clear() {
-        for (int r = 0; r < GRID_ROWS; r++)
-            for (int c = 0; c < GRID_COLS; c++)
-                grid[r][c] = ' ';
+        fill();
+    }
+
+    void fill(int color = 0b00) {
+        auto fb = lcd->getFramebuffer();
+        int stride = lcd->getStride();
+        for (int y = 0; y < SCREEN_H; y++)
+            for (int x = 0; x < SCREEN_W; x++)
+                setPixel(fb, stride, x, y, color);
+                lcd->updateDisplay();
         cursorRow = cursorCol = 0;
-        redrawAll();
     }
 
     void setCursor(int row, int col) {
@@ -98,17 +104,18 @@ private:
         lcd->updateDisplay();
     }
 
-    // Row-major, 8 horizontal pixels packed per byte, MSB = leftmost pixel.
-    // Inferred from the original demo's loop (`for x < getStride()`, not
-    // `< getWidth()`, with y advancing one full row per iteration) — that
-    // only makes sense if stride is bytes-per-row and pixels within a byte
-    // run left-to-right, not stacked vertically like the original guess.
-    void setPixel(unsigned char* fb, int stride, int x, int y, bool on) {
+    // Row-major, 2 bits per pixel (4-level greyscale), 4 horizontal pixels
+    // packed per byte, MSB-first pixel pairs. "on" is mapped to 0b11
+    // (assumed darkest level) and "off" to 0b00 (assumed lightest) — if
+    // this renders as white-on-black instead of black-on-white, the
+    // polarity is inverted for this panel; swap 0b11/0b00 below if so.
+    void setPixel(unsigned char* fb, int stride, int x, int y, int grey) {
         if (x < 0 || y < 0 || y >= SCREEN_H) return;
-        int byteIndex = (x / 8) + y * stride;
-        unsigned char bit = 1 << (7 - (x % 8));
-        if (on) fb[byteIndex] |= bit;
-        else    fb[byteIndex] &= ~bit;
+        int byteIndex = (x / 4) + y * stride;
+        int shift = 6 - 2 * (x % 4); // pixel 0 -> bits 7:6, pixel 1 -> bits 5:4, etc.
+        unsigned char mask = 0b11 << shift;
+        unsigned char value = grey << shift;
+        fb[byteIndex] = (fb[byteIndex] & ~mask) | value;
     }
 
     void drawCell(int row, int col) {
@@ -120,14 +127,14 @@ private:
         // clear the cell first (including the 1px gap column/row)
         for (int y = 0; y < CELL_H; y++)
             for (int x = 0; x < CELL_W; x++)
-                setPixel(fb, stride, ox + x, oy + y, false);
+                setPixel(fb, stride, ox + x, oy + y, 0b00);
 
         const unsigned char* rows = findGlyph(grid[row][col]);
         for (int gy = 0; gy < 7; gy++) {
             unsigned char bits = rows[gy];
             for (int gx = 0; gx < 5; gx++) {
                 bool on = (bits >> (4 - gx)) & 1;
-                if (on) setPixel(fb, stride, ox + gx, oy + gy, true);
+                if (on) setPixel(fb, stride, ox + gx, oy + gy, 0b11);
             }
         }
     }
