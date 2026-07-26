@@ -4,14 +4,22 @@
 #include <stdint.h>
 
 enum CommandType : uint8_t {
+    // N/ACK
+    EVT_ACK         = 0x00, // Bi-Drirectional, no payload
+    EVT_NACK        = 0xFF, // Bi-Drirectional, no payload
+
+    // Screen commands
     CMD_CLEAR       = 0x01, // Pi -> Cybiko, no payload
     CMD_SET_CURSOR  = 0x02, // Pi -> Cybiko, payload: row, col
     CMD_WRITE_TEXT  = 0x03, // Pi -> Cybiko, payload: ASCII bytes
     CMD_PUT_CHAR    = 0x04, // Pi -> Cybiko, payload: row, col, char
+    
+    // Ping/Pong
     CMD_PING        = 0x05, // Pi -> Cybiko, no payload
+    EVT_PONG        = 0xAA, // Cybiko -> Pi, no payload
 
+    // Keyboard
     EVT_KEY         = 0x81, // Cybiko -> Pi, payload: keycode, state (1=down,0=up)
-    EVT_PONG        = 0x82, // Cybiko -> Pi, no payload
 };
 
 static const int MAX_PAYLOAD = 64;
