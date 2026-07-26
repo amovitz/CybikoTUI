@@ -5,6 +5,7 @@
 // pressed = 0, released = 1.
 #pragma once
 #include <stdint.h>
+#include "SerialBus.h"
 
 // Confirmed from emu2/Main.cpp: cpu.setExternalArea(7, keyboard.get()).
 // The H8S bus splits the 24-bit external address space into 8 areas of
@@ -23,8 +24,11 @@ inline uint16_t scanColumn(int col) { // col: 0-9
 
     volatile uint8_t* lowPtr  = reinterpret_cast<volatile uint8_t*>(addr | 1);
     volatile uint8_t* highPtr = reinterpret_cast<volatile uint8_t*>(addr & ~1u);
+    pollSerial();
     uint8_t lowByte  = *lowPtr;   // rows 0-7
+    pollSerial();
     uint8_t highByte = *highPtr; // rows 8-15
+    pollSerial();
     return (static_cast<uint16_t>(highByte) << 8) | lowByte;
 }
 
