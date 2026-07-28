@@ -13,6 +13,7 @@
 #include "KeyboardScan.h"
 #include "SerialBus.h"
 
+static uint16_t keyState[10];
 static uint16_t prevKeyState[10] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF};
 
 static LCDDriver lcd;
@@ -69,21 +70,21 @@ static void handlePendingFrame() {
     }
 }
 
+//
+// Main
+//
 int main() {
-    // Seed the keyboard state
-    uint16_t keyState[10];
-    // scanKeyboard(prevKeyState);
-
+    // Init serial
     serialInit();
-    console.begin(&lcd);
 
-    // TEMP: draw something immediately so you can confirm the console/font
-    // renderer works before serial is wired up at all. Remove once you've
-    // visually confirmed this shows correctly on the real panel.
+    // Init the screen
+    console.begin(&lcd);
     console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
+    captureKeyboardBaseline();
 
     for (;;) {
         handlePendingFrame();
+        scanKeyboardDiffs();
 
         // keycode = col*16 + row (matches your Key Map image: col=A-line
         // index 0-9, row=D-line index 0-15). Runs every iteration

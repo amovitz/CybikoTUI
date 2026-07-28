@@ -1,39 +1,145 @@
-// KeyboardScan.h — address/data-bus matrix scan, algorithm confirmed from
-// emu2/KeyboardDevice.cpp (XtremeKeyboardDevice::read). Column = address
-// bits 1-10 (A1-A10), one cleared to select; row = 16 bits per column
-// (D0-D15), split into high/low byte via address bit 0. Active-low:
-// pressed = 0, released = 1.
 #pragma once
+
 #include <stdint.h>
 #include "SerialBus.h"
 
-// Confirmed from emu2/Main.cpp: cpu.setExternalArea(7, keyboard.get()).
-// The H8S bus splits the 24-bit external address space into 8 areas of
-// 2MB each (area N = N*0x200000 to N*0x200000+0x1FFFFF); area 7 is
-// 0xE00000-0xFFFFFF. My earlier guess (0x700000) was wrong — that's
-// inside area 3, the SAME area as flash, so those reads were hitting
-// flash's bus response instead of a floating bus. This one's grounded
-// in the actual area-to-device mapping, not elimination-by-linker-script.
-static const uint32_t KBD_BASE = 0x00E00000;
+// Cyborn's original 9-column addressing scheme (confirmed working on real
+// Cybiko Classic hardware, decoded from keypad.S): area 7 (0xE00000), with
+// all of bits 1-19 held HIGH except the one column being selected. i.e.
+//   addr(col) = 0xEFFFFF & ~(1 << col)
+// The Xtreme adds a 10th column (A10, per the schematic/pinout), so this
+// extends the identical pattern one bit further rather than guessing a new
+// scheme. Bit 0 doesn't matter per the original comment, left set to match
+// Cyborn's convention.
+static constexpr uint32_t columns[10] =
+{
+    0xEFFFFD, // A1
+    0xEFFFFB, // A2
+    0xEFFFF7, // A3
+    0xEFFFEF, // A4
+    0xEFFFDF, // A5
+    0xEFFFBF, // A6
+    0xEFFF7F, // A7
+    0xEFFEFF, // A8
+    0xEFFDFF, // A9
+    0xEFFBFF, // A10 -- new column, not present on the Classic
+};
 
-inline uint16_t scanColumn(int col) { // col: 0-9
-    uint32_t addr = KBD_BASE;
-    for (int i = 1; i <= 10; i++)
-        addr |= (1u << i);           // all column bits set (deselected)...
-    addr &= ~(1u << (col + 1));      // ...except the one we're selecting
+static uint16_t columnMasks[10] =
+{
+    0x80FE, // A1
+    0xFF00, // A2
+    0x80FE, // A3
+    0xFF00, // A4
+    0xFF86, // A5
+    0xF87E, // A6
+    0x87FE, // A7
+    0x7FFF, // A8
+    0x7FFF, // A9
+    0xFFE0, // A10
+};
+ 
+// Returns non-zero if any key in the matrix is pressed.
+// Equivalent to the assembly's __keypressed.
+inline bool anyKeyPressed()
+{
+    pollSerial();
 
-    volatile uint8_t* lowPtr  = reinterpret_cast<volatile uint8_t*>(addr | 1);
-    volatile uint8_t* highPtr = reinterpret_cast<volatile uint8_t*>(addr & ~1u);
+    return true;
+    
+    // Below causes issues with serial responsivness,
+    //   suspect hitting a reg I shouldn't.
+
+    // volatile uint16_t* ptr =
+    //     reinterpret_cast<volatile uint16_t*>(0x00EFF801);
+
+    // return *ptr != 0xFFFF;
+}
+ 
+inline uint16_t scanColumn(int column)
+{
     pollSerial();
-    uint8_t lowByte  = *lowPtr;   // rows 0-7
+
+    if (column < 0 || column >= 10 || !anyKeyPressed())
+        return 0xFFFF;
+        
+    volatile uint16_t* p =
+        reinterpret_cast<volatile uint16_t*>(columns[column]);
+
     pollSerial();
-    uint8_t highByte = *highPtr; // rows 8-15
-    pollSerial();
-    return (static_cast<uint16_t>(highByte) << 8) | lowByte;
+ 
+    return *p | columnMasks[column];
 }
 
-// Scans all 10 columns. Bit clear (0) = pressed, set (1) = released.
-inline void scanKeyboard(uint16_t state[10]) {
-    for (int col = 0; col < 10; col++)
-        state[col] = scanColumn(col);
+
+inline uint16_t scanRawAddress(uint32_t addr)
+{
+
+    anyKeyPressed();
+    
+    volatile uint16_t* p =
+        reinterpret_cast<volatile uint16_t*>(addr);
+
+    pollSerial();
+    
+    return *p;
+}
+
+inline void scanKeyboard(uint16_t state[10])
+{
+    for (int column = 0; column < 10; ++column) {
+        state[column] = scanColumn(column);
+    }
+}
+
+static uint16_t baseline[10];
+
+static void captureKeyboardBaseline()
+{
+    for (int i = 0; i < 10; ++i)
+    {
+        pollSerial();
+
+        volatile uint16_t* p = reinterpret_cast<volatile uint16_t*>(columns[i]);
+
+        baseline[i] = *p | columnMasks[i];
+    }
+}
+
+static void scanKeyboardDiffs()
+{
+    uint8_t payload[7];
+
+    for (int i = 0; i < 10; ++i)
+    {
+        pollSerial();
+
+        if (!anyKeyPressed()) {
+            baseline[i] = 0xFFFF;
+            continue;
+        }
+        
+        volatile uint16_t* p = reinterpret_cast<volatile uint16_t*>(columns[i]);
+
+        uint16_t now = *p | columnMasks[i];
+        uint16_t diff = now ^ baseline[i];
+
+        if (diff)
+        {
+            payload[0] = i+1;
+
+            payload[1] = (columns[i] >> 8) & 0xFF;
+            payload[2] = columns[i] & 0xFF;
+
+            payload[3] = (baseline[i] >> 8) & 0xFF;
+            payload[4] = baseline[i] & 0xFF;
+
+            payload[5] = now >> 8;
+            payload[6] = now & 0xFF;
+
+            writeFrame(writeByte, EVT_DEBUG, payload, sizeof(payload));
+
+            baseline[i] = now;
+        }
+    }
 }
