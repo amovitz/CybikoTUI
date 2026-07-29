@@ -6,6 +6,8 @@
 // boot/debug console per RFSerial.cpp/BootSerial.cpp in emu2/).
 #define SCI_CHANNEL 0
 
+#define KEYBOARD_POLL 10
+
 #include "Serial.hpp"
 #include "LCDDriver.h"
 #include "TextConsole.h"
@@ -81,40 +83,44 @@ int main() {
     console.begin(&lcd);
     console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
     captureKeyboardBaseline();
+    int8_t pollKeyboardInterval = KEYBOARD_POLL;
 
     for (;;) {
         handlePendingFrame();
-        scanKeyboardDiffs();
+        if (--pollKeyboardInterval <= 0) {
+            scanKeyboardDiffs();
+            pollKeyboardInterval = KEYBOARD_POLL;
+        }
 
         // keycode = col*16 + row (matches your Key Map image: col=A-line
         // index 0-9, row=D-line index 0-15). Runs every iteration
         // regardless of serial activity — prints hex to screen on press
         // even with nothing connected on the wire.
-        scanKeyboard(keyState);
-        for (int col = 0; col < 10; col++) {
-            handlePendingFrame();
-            uint16_t changed = keyState[col] ^ prevKeyState[col];
-            for (int row = 0; row < 16; row++) {
-                handlePendingFrame();
-                if (changed & (1 << row)) {
-                    bool pressed = !(keyState[col] & (1 << row)); // active-low
-                    uint8_t keycode = col * 16 + row;
+        // scanKeyboard(keyState);
+        // for (int col = 0; col < 10; col++) {
+        //     handlePendingFrame();
+        //     uint16_t changed = keyState[col] ^ prevKeyState[col];
+        //     for (int row = 0; row < 16; row++) {
+        //         handlePendingFrame();
+        //         if (changed & (1 << row)) {
+        //             bool pressed = !(keyState[col] & (1 << row)); // active-low
+        //             uint8_t keycode = col * 16 + row;
 
-                    if (pressed) {
-                        char hex[4];
-                        toHex2(hex, keycode);
-                        hex[3] = 0;
-                        console.writeText(hex, 3);
-                    }
+        //             if (pressed) {
+        //                 char hex[4];
+        //                 toHex2(hex, keycode);
+        //                 hex[3] = 0;
+        //                 console.writeText(hex, 3);
+        //             }
 
-                    handlePendingFrame();
+        //             handlePendingFrame();
 
-                    uint8_t payload[2] = { keycode, (uint8_t)(pressed ? 1 : 0) };
-                    writeFrame(writeByte, EVT_KEY, payload, 2);
-                }
-            }
-            prevKeyState[col] = keyState[col];
-        }
+        //             uint8_t payload[2] = { keycode, (uint8_t)(pressed ? 1 : 0) };
+        //             writeFrame(writeByte, EVT_KEY, payload, 2);
+        //         }
+        //     }
+        //     prevKeyState[col] = keyState[col];
+        // }
     }
 
     return 0;
