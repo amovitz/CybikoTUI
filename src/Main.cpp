@@ -1,19 +1,16 @@
 // Main.cpp — Cybiko-side firmware for the Pi TUI link.
 //
-// TODO(confirm): SCI channel. Set to 0 for now — change to whichever
-// channel is actually free once you've settled the physical Pi<->H8S
-// wiring (recall SCI1/SCI2 may already be claimed by the RF radio or a
-// boot/debug console per RFSerial.cpp/BootSerial.cpp in emu2/).
 #define SCI_CHANNEL 0
+#define KEYBOARD_POLL 25
 
-#define KEYBOARD_POLL 10
 
 #include "Serial.hpp"
 #include "LCDDriver.h"
 #include "TextConsole.h"
 #include "Protocol.h"
-#include "KeyboardScan.h"
+#include "KeyDecode.h"
 #include "SerialBus.h"
+
 
 static uint16_t keyState[10];
 static uint16_t prevKeyState[10] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF};
@@ -21,6 +18,10 @@ static uint16_t prevKeyState[10] = {0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0xFFFF,0x
 static LCDDriver lcd;
 static TextConsole console;
 
+
+//
+// Frame decoding/handling
+//
 static void handlePendingFrame() {
     Frame f;
     if (!tryGetFrame(f)) {
@@ -49,15 +50,13 @@ static void handlePendingFrame() {
             if (f.len >= 3)
                 console.putChar(f.payload[0], f.payload[1], f.payload[2]);
             break;
+        
+        //TODO: Raw draw for images
 
         /* ALIVE */
         case CMD_PING:
             writeFrame(writeByte, EVT_PONG, nullptr, 0);
             break;
-        //TODO: Reset
-        
-        /* KEYS */
-        //TODO: Map all keys
 
         /* VIBRATION */
         //TODO: Ouput Control
@@ -76,51 +75,27 @@ static void handlePendingFrame() {
 // Main
 //
 int main() {
-    // Init serial
+    // Init the serial bus
     serialInit();
 
     // Init the screen
     console.begin(&lcd);
     console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
-    captureKeyboardBaseline();
+    
+    // Init the keyboard
     int8_t pollKeyboardInterval = KEYBOARD_POLL;
+    initKeyboard();
+    pollKeyboard();
 
     for (;;) {
+        // Serial Comms
         handlePendingFrame();
+
+        // Keyboard Input
         if (--pollKeyboardInterval <= 0) {
-            scanKeyboardDiffs();
+            pollKeyboard();
             pollKeyboardInterval = KEYBOARD_POLL;
         }
-
-        // keycode = col*16 + row (matches your Key Map image: col=A-line
-        // index 0-9, row=D-line index 0-15). Runs every iteration
-        // regardless of serial activity — prints hex to screen on press
-        // even with nothing connected on the wire.
-        // scanKeyboard(keyState);
-        // for (int col = 0; col < 10; col++) {
-        //     handlePendingFrame();
-        //     uint16_t changed = keyState[col] ^ prevKeyState[col];
-        //     for (int row = 0; row < 16; row++) {
-        //         handlePendingFrame();
-        //         if (changed & (1 << row)) {
-        //             bool pressed = !(keyState[col] & (1 << row)); // active-low
-        //             uint8_t keycode = col * 16 + row;
-
-        //             if (pressed) {
-        //                 char hex[4];
-        //                 toHex2(hex, keycode);
-        //                 hex[3] = 0;
-        //                 console.writeText(hex, 3);
-        //             }
-
-        //             handlePendingFrame();
-
-        //             uint8_t payload[2] = { keycode, (uint8_t)(pressed ? 1 : 0) };
-        //             writeFrame(writeByte, EVT_KEY, payload, 2);
-        //         }
-        //     }
-        //     prevKeyState[col] = keyState[col];
-        // }
     }
 
     return 0;
