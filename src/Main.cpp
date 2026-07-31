@@ -1,7 +1,7 @@
 // Main.cpp — Cybiko-side firmware for the Pi TUI link.
 //
 #define SCI_CHANNEL 0
-#define KEYBOARD_POLL 25
+#define KEYBOARD_POLL 100
 
 
 #include "Serial.hpp"

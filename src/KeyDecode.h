@@ -389,6 +389,8 @@ static void pollKeyboard(void (*serialHandler)() = nullptr)
                 {
                     if (!(group & (1u << i)))
                         continue;
+                    if (serialHandler)
+                        serialHandler();
                     uint16_t v = (i == col) ? now : scanColumn(i);
                     baseline[i] = static_cast<uint16_t>(
                         (baseline[i] & ~(1u << row)) | (v & (1u << row)));
@@ -415,6 +417,8 @@ static void pollKeyboard(void (*serialHandler)() = nullptr)
                 {
                     if (!(group & (1u << i)))
                         continue;
+                    if (serialHandler)
+                        serialHandler();
                     uint16_t v = (i == col) ? now : scanColumn(i);
                     baseline[i] = static_cast<uint16_t>(
                         (baseline[i] & ~(1u << row)) | (v & (1u << row)));
