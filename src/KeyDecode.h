@@ -339,11 +339,12 @@ static void emitKeyEvent(const char *name, bool pressed)
 // Call once per main loop iteration. Scans, resolves funky-row ghosting
 // by exclusion, and emits EVT_KEY (or updates Shift/Fn state) for
 // whatever changed.
-static void pollKeyboard()
+static void pollKeyboard(void (*serialHandler)() = nullptr)
 {
     for (int col = 0; col < 10; ++col)
     {
-        pollSerial();
+        if (serialHandler)
+            serialHandler();
 
         if (!anyKeyPressed())
         {

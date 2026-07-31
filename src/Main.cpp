@@ -75,25 +75,25 @@ static void handlePendingFrame() {
 // Main
 //
 int main() {
+    // Init the serial bus first
+    serialInit();
+
     // Init the screen
     console.begin(&lcd);
     console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
-    
+
     // Init the keyboard
     int8_t pollKeyboardInterval = KEYBOARD_POLL;
     initKeyboard();
-    pollKeyboard();
-
-    // Init the serial bus
-    serialInit();
 
     for (;;) {
         // Serial Comms
+        pollSerial();
         handlePendingFrame();
 
         // Keyboard Input
         if (--pollKeyboardInterval <= 0) {
-            pollKeyboard();
+            pollKeyboard(handlePendingFrame);   // drains frames per-column, not just per-loop
             pollKeyboardInterval = KEYBOARD_POLL;
         }
     }
