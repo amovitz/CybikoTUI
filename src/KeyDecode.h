@@ -127,7 +127,7 @@ static constexpr bool funkyRow[16] =
         /*D12*/ true,
         /*D13*/ false,
         /*D14*/ false,
-        /*D15*/ false,
+        /*D15*/ true,
 };
 
 static uint16_t funkyGroupMask[16] = {0};
