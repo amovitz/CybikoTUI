@@ -28,61 +28,116 @@
 // the bits left clear in its mask match exactly the rows listed here for
 // that column.
 // ---------------------------------------------------------------------
-struct KeyCell { uint8_t row; uint8_t col; const char* name; };
+struct KeyCell
+{
+    uint8_t row;
+    uint8_t col;
+    const char *name;
+};
 
 static constexpr KeyCell keyMatrix[] =
-{
-    // D0 (funky)
-    {0,0,"F7"}, {0,1,"F6"}, {0,2,"F5"}, {0,3,"F4"},
-    {0,4,"F3"}, {0,5,"F2"}, {0,6,"F1"}, {0,9,"Help"},
-    // D1
-    {1,1,"G"}, {1,3,"Q"}, {1,9,"."},
-    // D2 (funky)
-    {2,1,"B"}, {2,3,"A"}, {2,9,"!"},
-    // D3 (funky)
-    {3,1,"N"}, {3,3,"Z"}, {3,4,"Enter"}, {3,9,";"},
-    // D4 (funky)
-    {4,1,"H"}, {4,3,"X"}, {4,4,"Select"}, {4,9,"P"},
-    // D5
-    {5,1,"Y"}, {5,3,"S"}, {5,4,"Menu"},
-    // D6
-    {6,1,"U"}, {6,3,"W"}, {6,4,"Space"},
-    // D7 (funky)
-    {7,1,"J"}, {7,3,"E"}, {7,5,"Tab"},
-    // D8
-    {8,0,"M"}, {8,2,"D"}, {8,5,"Delete"},
-    // D9
-    {9,0,")"}, {9,2,"C"}, {9,5,"Insert"},
-    // D10
-    {10,0,","}, {10,2,"("}, {10,5,"Escape"},
-    // D11
-    {11,0,"K"}, {11,2,"V"}, {11,6,"Up"},
-    // D12 (funky)
-    {12,0,"I"}, {12,2,"F"}, {12,6,"Right"},
-    // D13
-    {13,0,"O"}, {13,2,"R"}, {13,6,"Down"},
-    // D14
-    {14,0,"L"}, {14,2,"T"}, {14,6,"Left"},
-    // D15
-    {15,7,"Fn"}, {15,8,"Shift"},
+    {
+        // D0 (funky)
+        {0, 0, "F7"},
+        {0, 1, "F6"},
+        {0, 2, "F5"},
+        {0, 3, "F4"},
+        {0, 4, "F3"},
+        {0, 5, "F2"},
+        {0, 6, "F1"},
+        {0, 9, "Help"},
+        // D1
+        {1, 1, "G"},
+        {1, 3, "Q"},
+        {1, 9, "."},
+        // D2 (funky)
+        {2, 1, "B"},
+        {2, 3, "A"},
+        {2, 9, "!"},
+        // D3 (funky)
+        {3, 1, "N"},
+        {3, 3, "Z"},
+        {3, 4, "Enter"},
+        {3, 9, ";"},
+        // D4 (funky)
+        {4, 1, "H"},
+        {4, 3, "X"},
+        {4, 4, "Select"},
+        {4, 9, "P"},
+        // D5
+        {5, 1, "Y"},
+        {5, 3, "S"},
+        {5, 4, "Menu"},
+        // D6
+        {6, 1, "U"},
+        {6, 3, "W"},
+        {6, 4, "Space"},
+        // D7 (funky)
+        {7, 1, "J"},
+        {7, 3, "E"},
+        {7, 5, "Tab"},
+        // D8
+        {8, 0, "M"},
+        {8, 2, "D"},
+        {8, 5, "Delete"},
+        // D9
+        {9, 0, ")"},
+        {9, 2, "C"},
+        {9, 5, "Insert"},
+        // D10
+        {10, 0, ","},
+        {10, 2, "("},
+        {10, 5, "Escape"},
+        // D11
+        {11, 0, "K"},
+        {11, 2, "V"},
+        {11, 6, "Up"},
+        // D12 (funky)
+        {12, 0, "I"},
+        {12, 2, "F"},
+        {12, 6, "Right"},
+        // D13
+        {13, 0, "O"},
+        {13, 2, "R"},
+        {13, 6, "Down"},
+        // D14
+        {14, 0, "L"},
+        {14, 2, "T"},
+        {14, 6, "Left"},
+        // D15
+        {15, 7, "Fn"},
+        {15, 8, "Shift"},
 };
 static constexpr int keyMatrixCount = sizeof(keyMatrix) / sizeof(keyMatrix[0]);
 
 static constexpr bool funkyRow[16] =
-{
-    /*D0 */ true,  /*D1 */ false, /*D2 */ true,  /*D3 */ true,
-    /*D4 */ true,  /*D5 */ false, /*D6 */ false, /*D7 */ true,
-    /*D8 */ false, /*D9 */ false, /*D10*/ false, /*D11*/ false,
-    /*D12*/ true,  /*D13*/ false, /*D14*/ false, /*D15*/ false,
+    {
+        /*D0 */ true,
+        /*D1 */ false,
+        /*D2 */ true,
+        /*D3 */ true,
+        /*D4 */ true,
+        /*D5 */ false,
+        /*D6 */ false,
+        /*D7 */ true,
+        /*D8 */ false,
+        /*D9 */ false,
+        /*D10*/ false,
+        /*D11*/ false,
+        /*D12*/ true,
+        /*D13*/ false,
+        /*D14*/ false,
+        /*D15*/ false,
 };
 
 static uint16_t funkyGroupMask[16] = {0};
 static uint16_t funkyPending[16] = {0};
-static int8_t   funkyHeld[16];
+static int8_t funkyHeld[16];
 
-static const char* findKeyName(int row, int col)
+static const char *findKeyName(int row, int col)
 {
-    for (int i = 0; i < keyMatrixCount; ++i) {
+    for (int i = 0; i < keyMatrixCount; ++i)
+    {
         pollSerial();
 
         if (keyMatrix[i].row == row && keyMatrix[i].col == col)
@@ -102,27 +157,57 @@ static const char* findKeyName(int row, int col)
 //     with a plain ASCII double-quote here since curly quotes aren't ASCII.
 // A 0 in shift or fn means "no alternate", falls back to base.
 // ---------------------------------------------------------------------
-struct KeyAlt { const char* name; char base; char shift; char fn; };
+struct KeyAlt
+{
+    const char *name;
+    char base;
+    char shift;
+    char fn;
+};
 
 static constexpr KeyAlt keyAlternates[] =
-{
-    {"Q",'q','Q','1'}, {"W",'w','W','2'}, {"E",'e','E','3'}, {"R",'r','R','4'},
-    {"T",'t','T','5'}, {"Y",'y','Y','6'}, {"U",'u','U','7'}, {"I",'i','I','8'},
-    {"O",'o','O','9'}, {"P",'p','P','0'},
-    {"A",'a','A','@'}, {"S",'s','S','&'}, {"D",'d','D','$'}, {"F",'f','F','%'},
-    {"G",'g','G','*'}, {"H",'h','H','+'}, {"J",'j','J','-'}, {"K",'k','K','_'},
-    {"L",'l','L','='}, {";",';','|',':'},
-    {"Z",'z','Z','"'}, {"X",'x','X','#'}, {"C",'c','C','@'}, {"V",'v','V','{'},
-    {"B",'b','B','}'}, {"N",'n','N','<'}, {"M",'m','M','>'},
-    {",",',','~','\''}, {".",'.','\\','/'}, {"!",'!','^','?'},
-    {"(",'(', 0,  '['}, {")",')', 0,  ']'},
-    
-    {"Enter",'\n', '\n', '\n'}, {"Space",' ', ' ', ' '},
-    {"Tab",'\t', '\t', '\t'}, {"Delete",'\b', '\b', '\b'},
+    {
+        {"Q", 'q', 'Q', '1'},
+        {"W", 'w', 'W', '2'},
+        {"E", 'e', 'E', '3'},
+        {"R", 'r', 'R', '4'},
+        {"T", 't', 'T', '5'},
+        {"Y", 'y', 'Y', '6'},
+        {"U", 'u', 'U', '7'},
+        {"I", 'i', 'I', '8'},
+        {"O", 'o', 'O', '9'},
+        {"P", 'p', 'P', '0'},
+        {"A", 'a', 'A', '@'},
+        {"S", 's', 'S', '&'},
+        {"D", 'd', 'D', '$'},
+        {"F", 'f', 'F', '%'},
+        {"G", 'g', 'G', '*'},
+        {"H", 'h', 'H', '+'},
+        {"J", 'j', 'J', '-'},
+        {"K", 'k', 'K', '_'},
+        {"L", 'l', 'L', '='},
+        {";", ';', '|', ':'},
+        {"Z", 'z', 'Z', '"'},
+        {"X", 'x', 'X', '#'},
+        {"C", 'c', 'C', '@'}, // Cybiko Logo on Fn
+        {"V", 'v', 'V', '{'},
+        {"B", 'b', 'B', '}'},
+        {"N", 'n', 'N', '<'},
+        {"M", 'm', 'M', '>'},
+        {",", ',', '~', '\''},
+        {".", '.', '\\', '/'},
+        {"!", '!', '^', '?'},
+        {"(", '(', '(', '['},
+        {")", ')', ')', ']'},
+
+        {"Enter", '\n', '\n', '\n'},
+        {"Space", ' ', ' ', ' '},
+        {"Tab", '\t', '\t', '\t'},
+        {"Delete", '\b', '\b', '\b'},
 };
 static constexpr int keyAlternatesCount = sizeof(keyAlternates) / sizeof(keyAlternates[0]);
 
-static char resolveChar(const char* name, bool shift, bool fn)
+static char resolveChar(const char *name, bool shift, bool fn)
 {
     for (int i = 0; i < keyAlternatesCount; ++i)
     {
@@ -131,8 +216,10 @@ static char resolveChar(const char* name, bool shift, bool fn)
 
         pollSerial();
 
-        if (fn && keyAlternates[i].fn)       return keyAlternates[i].fn;
-        if (shift && keyAlternates[i].shift) return keyAlternates[i].shift;
+        if (fn && keyAlternates[i].fn)
+            return keyAlternates[i].fn;
+        if (shift && keyAlternates[i].shift)
+            return keyAlternates[i].shift;
         return keyAlternates[i].base;
     }
     return 0; // not a typing key
@@ -142,28 +229,55 @@ static char resolveChar(const char* name, bool shift, bool fn)
 // with a resolved ASCII char.
 enum : uint8_t
 {
-    KEY_F1 = 0x80, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7,
-    KEY_HELP, KEY_SELECT, KEY_MENU, KEY_INSERT,
-    KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT,
+    KEY_F1 = 0x80,
+    KEY_F2,
+    KEY_F3,
+    KEY_F4,
+    KEY_F5,
+    KEY_F6,
+    KEY_F7,
+    KEY_HELP,
+    KEY_SELECT,
+    KEY_MENU,
+    KEY_INSERT,
+    KEY_UP,
+    KEY_RIGHT,
+    KEY_DOWN,
+    KEY_LEFT,
 };
 
-static uint8_t resolveSpecialCode(const char* name)
+static uint8_t resolveSpecialCode(const char *name)
 {
-    if (!strcmp(name,"F1"))      return KEY_F1;
-    if (!strcmp(name,"F2"))      return KEY_F2;
-    if (!strcmp(name,"F3"))      return KEY_F3;
-    if (!strcmp(name,"F4"))      return KEY_F4;
-    if (!strcmp(name,"F5"))      return KEY_F5;
-    if (!strcmp(name,"F6"))      return KEY_F6;
-    if (!strcmp(name,"F7"))      return KEY_F7;
-    if (!strcmp(name,"Help"))    return KEY_HELP;
-    if (!strcmp(name,"Select"))  return KEY_SELECT;
-    if (!strcmp(name,"Menu"))    return KEY_MENU;
-    if (!strcmp(name,"Insert"))  return KEY_INSERT;
-    if (!strcmp(name,"Up"))      return KEY_UP;
-    if (!strcmp(name,"Right"))   return KEY_RIGHT;
-    if (!strcmp(name,"Down"))    return KEY_DOWN;
-    if (!strcmp(name,"Left"))    return KEY_LEFT;
+    if (!strcmp(name, "F1"))
+        return KEY_F1;
+    if (!strcmp(name, "F2"))
+        return KEY_F2;
+    if (!strcmp(name, "F3"))
+        return KEY_F3;
+    if (!strcmp(name, "F4"))
+        return KEY_F4;
+    if (!strcmp(name, "F5"))
+        return KEY_F5;
+    if (!strcmp(name, "F6"))
+        return KEY_F6;
+    if (!strcmp(name, "F7"))
+        return KEY_F7;
+    if (!strcmp(name, "Help"))
+        return KEY_HELP;
+    if (!strcmp(name, "Select"))
+        return KEY_SELECT;
+    if (!strcmp(name, "Menu"))
+        return KEY_MENU;
+    if (!strcmp(name, "Insert"))
+        return KEY_INSERT;
+    if (!strcmp(name, "Up"))
+        return KEY_UP;
+    if (!strcmp(name, "Right"))
+        return KEY_RIGHT;
+    if (!strcmp(name, "Down"))
+        return KEY_DOWN;
+    if (!strcmp(name, "Left"))
+        return KEY_LEFT;
     return 0;
 }
 
@@ -177,7 +291,7 @@ static void initKeyboard()
 {
     for (int i = 0; i < keyMatrixCount; ++i)
     {
-        const KeyCell& k = keyMatrix[i];
+        const KeyCell &k = keyMatrix[i];
         if (funkyRow[k.row])
             funkyGroupMask[k.row] |= static_cast<uint16_t>(1u << k.col);
     }
@@ -194,27 +308,28 @@ static void initKeyboard()
     captureKeyboardBaseline();
 }
 
-static void emitKeyEvent(const char* name, bool pressed)
+static void emitKeyEvent(const char *name, bool pressed)
 {
     // Shift/Fn are handled locally: track state, no EVT_KEY of their own.
-    if (!strcmp(name, "Shift")) { shiftHeld = pressed; return; }
-    if (!strcmp(name, "Fn"))    { fnHeld = pressed;    return; }
+    if (!strcmp(name, "Shift"))
+    {
+        shiftHeld = pressed;
+        return;
+    }
+    if (!strcmp(name, "Fn"))
+    {
+        fnHeld = pressed;
+        return;
+    }
 
     uint8_t code;
-    if (!strcmp(name, "Spc"))
-    {
-        code = ' ';
-    }
-    else
-    {
-        char c = resolveChar(name, shiftHeld, fnHeld);
-        code = c ? static_cast<uint8_t>(c) : resolveSpecialCode(name);
-    }
+    char c = resolveChar(name, shiftHeld, fnHeld);
+    code = c ? static_cast<uint8_t>(c) : resolveSpecialCode(name);
 
     if (!code)
         return; // unrecognized name, nothing to emit
 
-    uint8_t payload[2] = { code, static_cast<uint8_t>(pressed ? 1 : 0) };
+    uint8_t payload[2] = {code, static_cast<uint8_t>(pressed ? 1 : 0)};
     writeFrame(writeByte, EVT_KEY, payload, sizeof(payload));
 }
 
@@ -233,7 +348,7 @@ static void pollKeyboard()
             continue;
         }
 
-        uint16_t now  = scanColumn(col);
+        uint16_t now = scanColumn(col);
         uint16_t diff = now ^ baseline[col];
 
         if (!diff)
@@ -247,7 +362,7 @@ static void pollKeyboard()
             if (!funkyRow[row])
             {
                 bool pressed = !((now >> row) & 1);
-                const char* name = findKeyName(row, col);
+                const char *name = findKeyName(row, col);
                 if (name)
                     emitKeyEvent(name, pressed);
 
@@ -259,7 +374,7 @@ static void pollKeyboard()
             // Funky row: record that this column just moved off baseline.
             funkyPending[row] |= static_cast<uint16_t>(1u << col);
 
-            uint16_t group   = funkyGroupMask[row];
+            uint16_t group = funkyGroupMask[row];
             uint16_t missing = group & ~funkyPending[row];
 
             if (missing == 0)
@@ -285,7 +400,7 @@ static void pollKeyboard()
                 while (!((missing >> missingCol) & 1))
                     ++missingCol;
 
-                const char* name = findKeyName(row, missingCol);
+                const char *name = findKeyName(row, missingCol);
                 bool pressed = (funkyHeld[row] == -1);
                 funkyHeld[row] = pressed ? static_cast<int8_t>(missingCol) : -1;
 

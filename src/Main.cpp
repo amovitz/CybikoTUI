@@ -75,9 +75,6 @@ static void handlePendingFrame() {
 // Main
 //
 int main() {
-    // Init the serial bus
-    serialInit();
-
     // Init the screen
     console.begin(&lcd);
     console.writeText("HELLO CYBIKO\nSERIAL PENDING", 27);
@@ -86,6 +83,9 @@ int main() {
     int8_t pollKeyboardInterval = KEYBOARD_POLL;
     initKeyboard();
     pollKeyboard();
+
+    // Init the serial bus
+    serialInit();
 
     for (;;) {
         // Serial Comms
