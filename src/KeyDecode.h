@@ -244,6 +244,7 @@ enum : uint8_t
     KEY_RIGHT,
     KEY_DOWN,
     KEY_LEFT,
+    KEY_ESCAPE,
 };
 
 static uint8_t resolveSpecialCode(const char *name)
@@ -278,6 +279,8 @@ static uint8_t resolveSpecialCode(const char *name)
         return KEY_DOWN;
     if (!strcmp(name, "Left"))
         return KEY_LEFT;
+    if (!strcmp(name, "Escape"))
+        return KEY_ESCAPE;
     return 0;
 }
 

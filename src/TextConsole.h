@@ -3,6 +3,7 @@
 // until LCDDriver.h's real width/height/pixel-packing are confirmed —
 // search for "TODO(confirm)" below.
 #pragma once
+#include <string.h>
 #include "LCDDriver.h"
 #include "font5x7.h"
 
@@ -29,20 +30,17 @@ public:
                 grid[r][c] = ' ';
         cursorRow = cursorCol = 0;
 
-        fill(0b00);
-    }
-
-    void fill(int color = 0b00) {
-        // Direct memset instead of walking every cell through setPixel() —
-        // 0x00 = all 4 pixels/byte at level 0 (assumed lightest, matching
-        // setPixel's "off" mapping). If setPixel's polarity turns out to
-        // be inverted for this panel, use 0xFF here too for consistency.
+        // Direct byte-fill instead of walking every cell through setPixel()
+        // — hand-rolled rather than memset(), since this newlib build may
+        // not have it linkable. 0x00 = all 4 pixels/byte at level 0
+        // (assumed lightest, matching setPixel's "off" mapping). If
+        // setPixel's polarity turns out inverted for this panel, use 0xFF
+        // here too for consistency.
         auto fb = lcd->getFramebuffer();
         int totalBytes = lcd->getStride() * lcd->getHeight();
-        for(int i = 0; i < totalBytes; i++) {
-            fb[i] = color << 6 | color << 4 | color << 2 | color;
-        }
- 
+        for (int i = 0; i < totalBytes; i++)
+            fb[i] = 0x00;
+
         lcd->setDirty();
         lcd->updateDisplay();
     }
@@ -55,13 +53,33 @@ public:
     }
 
     // Writes text at the cursor, wraps at end of row, scrolls at bottom.
-    // Handles '\n' as a newline. Redraws only the cells touched.
+    // Handles '\n' newline, '\b' backspace (erase-and-move-back), '\t' tab
+    // (advances to next 4-column stop, filling with spaces). Redraws only
+    // the cells touched.
     void writeText(const char* text, int len) {
         for (int i = 0; i < len; i++) {
             char c = text[i];
             if (c == '\n') {
                 cursorCol = 0;
                 cursorRow++;
+            } else if (c == '\b') {
+                if (cursorCol > 0) {
+                    cursorCol--;
+                } else if (cursorRow > 0) {
+                    cursorRow--;
+                    cursorCol = GRID_COLS - 1;
+                }
+                putCharAt(cursorRow, cursorCol, ' ');
+            } else if (c == '\t') {
+                int next = (cursorCol / 4 + 1) * 4;
+                while (cursorCol < next && cursorCol < GRID_COLS) {
+                    putCharAt(cursorRow, cursorCol, ' ');
+                    cursorCol++;
+                }
+                if (cursorCol >= GRID_COLS) {
+                    cursorCol = 0;
+                    cursorRow++;
+                }
             } else {
                 putCharAt(cursorRow, cursorCol, c);
                 cursorCol++;
@@ -119,12 +137,12 @@ private:
     // (assumed darkest level) and "off" to 0b00 (assumed lightest) — if
     // this renders as white-on-black instead of black-on-white, the
     // polarity is inverted for this panel; swap 0b11/0b00 below if so.
-    void setPixel(unsigned char* fb, int stride, int x, int y, int grey) {
+    void setPixel(unsigned char* fb, int stride, int x, int y, bool on) {
         if (x < 0 || y < 0 || y >= SCREEN_H) return;
         int byteIndex = (x / 4) + y * stride;
         int shift = 6 - 2 * (x % 4); // pixel 0 -> bits 7:6, pixel 1 -> bits 5:4, etc.
         unsigned char mask = 0b11 << shift;
-        unsigned char value = grey << shift;
+        unsigned char value = (on ? 0b11 : 0b00) << shift;
         fb[byteIndex] = (fb[byteIndex] & ~mask) | value;
     }
 
@@ -137,14 +155,14 @@ private:
         // clear the cell first (including the 1px gap column/row)
         for (int y = 0; y < CELL_H; y++)
             for (int x = 0; x < CELL_W; x++)
-                setPixel(fb, stride, ox + x, oy + y, 0b00);
+                setPixel(fb, stride, ox + x, oy + y, false);
 
         const unsigned char* rows = findGlyph(grid[row][col]);
         for (int gy = 0; gy < 7; gy++) {
             unsigned char bits = rows[gy];
             for (int gx = 0; gx < 5; gx++) {
                 bool on = (bits >> (4 - gx)) & 1;
-                if (on) setPixel(fb, stride, ox + gx, oy + gy, 0b11);
+                if (on) setPixel(fb, stride, ox + gx, oy + gy, true);
             }
         }
     }
