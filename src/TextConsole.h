@@ -114,6 +114,13 @@ private:
         drawCell(row, col);
     }
 
+    // Every row except the new blank one already holds correct pixel
+    // data one cell-row too high, so shift the framebuffer bytes directly
+    // instead of re-rasterizing them, and only rasterize the row that's
+    // actually new (26 cells instead of 312 -- about a 12x cut).
+    //
+    // Manual byte loops instead of memmove()/memset() to stay consistent
+    // with clear()'s note above about this newlib build's libc linking.
     void scroll() {
         for (int r = 1; r < GRID_ROWS; r++)
             for (int c = 0; c < GRID_COLS; c++)
@@ -121,7 +128,32 @@ private:
         for (int c = 0; c < GRID_COLS; c++)
             grid[GRID_ROWS - 1][c] = ' ';
         cursorRow = GRID_ROWS - 1;
-        redrawAll();
+
+        auto fb = lcd->getFramebuffer();
+        int stride = lcd->getStride();
+        int rowBytes = stride * CELL_H;
+        int totalBytes = stride * lcd->getHeight();
+        int keepBytes = rowBytes * (GRID_ROWS - 1);
+
+        // Shift everything up by one cell-row. Safe to do forward (low to
+        // high address) since dst index is always behind src index by
+        // rowBytes, so no byte is overwritten before it's read.
+        for (int i = 0; i < keepBytes; i++)
+            fb[i] = fb[i + rowBytes];
+
+        // Blank whatever's left (the last cell-row, plus any stride
+        // padding beyond GRID_ROWS*CELL_H if the panel height doesn't
+        // divide evenly).
+        for (int i = keepBytes; i < totalBytes; i++)
+            fb[i] = 0x00;
+
+        // Only the bottom row needs re-rasterizing -- everything above it
+        // is already correct, just relocated.
+        for (int c = 0; c < GRID_COLS; c++)
+            drawCell(GRID_ROWS - 1, c);
+
+        lcd->setDirty();
+        lcd->updateDisplay();
     }
 
     void redrawAll() {
